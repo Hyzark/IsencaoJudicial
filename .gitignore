@@ -1,0 +1,16 @@
+﻿.venv/
+venv/
+venv*/
+__pycache__/
+*.pyc
+*.pyo
+*.cache
+
+runs/
+results/
+output/
+license_plate/
+
+*.log
+.DS_Store
+Thumbs.db
