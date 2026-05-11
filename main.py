@@ -19,6 +19,8 @@ try:
     from app_pdf_intervias import ValidadorPDFNovoFormato as ValidadorIntervias
     from app_excel_colinas import ValidadorNovoFormato as ValidadorColinas
     from app_excel_spvias import ValidadorExcelPro as ValidadorSPvias
+    from app_img_tamoios import ValidadorImgTamoios
+    from app_pdf_eixosp import ValidadorPdfEixo
 except ImportError as e:
     print(f"Erro ao importar módulos: {e}")
     input("Prime Enter para sair...")
@@ -37,6 +39,8 @@ def menu():
         print("5. Intervias/Arteris - Evasão (PDF)")
         print("6. Colinas - Evasão (Excel)")
         print("7. SPvias - Evasão (Excel)")
+        print("8. Tamoios - Isenção Judicial (IMG)")
+        print("9. EixoSP - Isenção Judicial (PDF)")
         print("0. Sair")
         print("-"*60)
 
@@ -45,7 +49,14 @@ def menu():
         if escolha == '0':
             break
 
-        processar_opcao(escolha)
+        if escolha == '0':
+            break
+
+        if escolha == '8':
+            executar_validador('8', '')
+        else:
+            processar_opcao(escolha)
+
         input("\nProcessamento concluído. Prime Enter para voltar ao menu...")
 
 
@@ -112,6 +123,86 @@ def executar_validador(opcao, caminho_entrada):
             saida = ensure_parent(RESULTS_EVASAO_DIR / f"resultado_spvias_{nome_base}.xlsx")
             v = ValidadorSPvias(yolo_weights_path=str(MODEL_PATH))
             v.processar(str(entrada_spvias), str(saida))
+
+        elif opcao == '8':
+
+            print('\n=== PROCESSAMENTO TAMOIOS ===\n')
+
+            # ─────────────────────────────────────────────────────────────
+            # PRIMEIRO: CAMINHO DAS IMAGENS
+            # ─────────────────────────────────────────────────────────────
+            pasta_imgs_str = input(
+                'Informe o caminho da pasta de imagens: '
+            ).strip()
+
+            if not pasta_imgs_str:
+                print('Nenhuma pasta de imagens informada.')
+                return
+
+            pasta_imgs = Path(pasta_imgs_str)
+
+            if not pasta_imgs.exists() or not pasta_imgs.is_dir():
+                print(f'Pasta inválida: {pasta_imgs}')
+                return
+
+            # ─────────────────────────────────────────────────────────────
+            # SEGUNDO: CAMINHO DO EXCEL
+            # ─────────────────────────────────────────────────────────────
+            planilha_str = input(
+                'Informe o caminho da planilha Excel (.xlsx): '
+            ).strip()
+
+            if not planilha_str:
+                print('Nenhuma planilha informada.')
+                return
+
+            planilha = Path(planilha_str)
+
+            if not planilha.exists() or planilha.suffix.lower() != '.xlsx':
+                print(f'Planilha inválida: {planilha}')
+                return
+
+            # ─────────────────────────────────────────────────────────────
+            # SAÍDA
+            # ─────────────────────────────────────────────────────────────
+            nome_base = pasta_imgs.name
+
+            saida = ensure_parent(
+                RESULTS_ISENCAO_DIR / f'resultado_tamoios_{nome_base}.xlsx'
+            )
+
+            print('\nResumo:')
+            print(f'  Pasta imagens: {pasta_imgs}')
+            print(f'  Planilha Excel: {planilha}')
+            print(f'  Saída: {saida}')
+            print()
+
+            # ─────────────────────────────────────────────────────────────
+            # PROCESSAMENTO
+            # ─────────────────────────────────────────────────────────────
+            v = ValidadorImgTamoios(
+                yolo_weights_path=str(MODEL_PATH)
+            )
+
+            v.processar(
+                str(planilha),
+                str(pasta_imgs),
+                str(saida)
+            )
+        elif opcao == '9':
+
+            saida = ensure_parent(
+                RESULTS_ISENCAO_DIR / f"resultado_eixosp_{nome_base}.xlsx"
+            )
+
+            v = ValidadorPdfEixo(
+                yolo_weights_path=str(MODEL_PATH)
+            )
+
+            v.processar(
+                str(caminho_entrada),
+                str(saida)
+            )
 
     except Exception as e:
         print(f"Erro ao processar {caminho_entrada.name}: {e}")

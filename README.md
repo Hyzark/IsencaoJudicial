@@ -31,16 +31,10 @@ Esse caminho e as pastas de resultado ficam centralizados em `config.py`.
 
 ## Execucao
 
-Os scripts principais estao na raiz:
+O script main está na raiz:
 
 ```powershell
-python app_excel_spvias.py
-python app_excel_colinas.py
-python app_excel_eixovp.py
-python app_excel_rota_bandeiras.py
-python app_pdf_ecovias.py
-python app_pdf_intervias.py
-python app_pdf_autoban.py
+py main.py
 ```
 
 As entradas padrao ficam em subpastas de `Downloads`. Os arquivos gerados sao salvos em `results/`.
@@ -50,6 +44,11 @@ As entradas padrao ficam em subpastas de `Downloads`. Os arquivos gerados sao sa
 Para gerar relatorio visual:
 
 ```powershell
-python debug.py --pdf "C:\caminho\arquivo.pdf"
-python debug.py --xlsx "C:\caminho\arquivo.xlsx"
+Analisar somente um arquivo:
+  python debug.py --pdf  caminho/para/arquivo.pdf
+  python debug.py --xlsx caminho/para/arquivo.xlsx
+
+Analisar vários arquivos:
+  python debug.py --pdf  pasta/com/pdfs/     --todos
+  python debug.py --xlsx pasta/com/excels/   --todos
 ```

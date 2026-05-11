@@ -9,7 +9,7 @@ import re
 from io import BytesIO
 from PIL import Image
 from tqdm import tqdm
-from config import DOWNLOADS_DIR, MODEL_PATH, RESULTS_EVASAO_DIR, ensure_parent
+from config import DOWNLOADS_DIR, MODEL_PATH, RESULTS_ISENCAO_DIR, ensure_parent
 
 class ValidadorPassagens:
     def __init__(self, yolo_weights_path):
@@ -487,7 +487,7 @@ class ValidadorPassagens:
 if __name__ == "__main__":
     CAMINHO_YOLO_WEIGHTS = MODEL_PATH
     CAMINHO_PDF = DOWNLOADS_DIR / '01.pdf'
-    SAIDA_EXCEL = ensure_parent(RESULTS_EVASAO_DIR / 'resultado_autoban.xlsx')
+    SAIDA_EXCEL = ensure_parent(RESULTS_ISENCAO_DIR / 'resultado_autoban.xlsx')
 
     validador = ValidadorPassagens(yolo_weights_path=CAMINHO_YOLO_WEIGHTS)
 
