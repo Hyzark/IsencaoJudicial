@@ -7,6 +7,7 @@ from ultralytics import YOLO
 import re
 from io import BytesIO
 from PIL import Image
+from tqdm import tqdm  # Importação da barra de progresso
 
 class ValidadorPassagens:
     def __init__(self, yolo_weights_path):
@@ -25,7 +26,8 @@ class ValidadorPassagens:
         doc = fitz.open(pdf_path)
         passagens = []
 
-        for page_num in range(len(doc)):
+        # Barra de progresso para a leitura das páginas do PDF
+        for page_num in tqdm(range(len(doc)), desc="Extraindo dados do PDF"):
             page = doc[page_num]
             
             # Extrai blocos de texto e imagens
@@ -129,7 +131,8 @@ class ValidadorPassagens:
         """
         dados_finais = []
         
-        for p in passagens:
+        # Barra de progresso para o processamento do YOLO + OCR
+        for p in tqdm(passagens, desc="Processando YOLO e OCR"):
             placa_ocr = self.processar_imagem_yolo_ocr(p['imagem_bytes'])
             
             dados_finais.append({
@@ -141,7 +144,7 @@ class ValidadorPassagens:
             
         df = pd.DataFrame(dados_finais)
         df.to_excel(output_excel, index=False)
-        print(f"Processamento concluído. Salvo em: {output_excel}")
+        print(f"\nProcessamento concluído. Salvo em: {output_excel}")
         return df
 
 # ==========================================
@@ -156,10 +159,10 @@ if __name__ == "__main__":
     validador = ValidadorPassagens(yolo_weights_path=CAMINHO_YOLO_WEIGHTS)
     
     # Executa a pipeline
-    print("Extraindo dados do PDF...")
+    print("\nIniciando a extração do PDF...")
     passagens_extraidas = validador.extrair_dados_pdf(CAMINHO_PDF)
     
-    print(f"Total de registros encontrados: {len(passagens_extraidas)}")
-    print("Iniciando processamento YOLO + OCR...")
+    print(f"\nTotal de registros encontrados: {len(passagens_extraidas)}")
+    print("Iniciando processamento de Imagens (YOLO + OCR)...")
     
     df_resultado = validador.gerar_relatorio(passagens_extraidas, SAIDA_EXCEL)

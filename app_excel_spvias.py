@@ -203,42 +203,65 @@ class ValidadorExcelPro:
     # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     def _pre_processar_imagem(self, img_array: np.ndarray) -> list[np.ndarray]:
-        """
-        Gera 5 variantes do recorte da placa para maximizar a chance de OCR:
-          0 - Original redimensionada (escala mÃ­nima 3Ã—, mÃ­nimo 600 px)
-          1 - CLAHE (equalizaÃ§Ã£o de contraste local)
-          2 - Otsu normal
-          3 - Otsu invertido
-          4 - Threshold adaptativo Gaussiano com morfologia
-        """
+
         if img_array is None or img_array.size == 0:
             return []
 
         _, largura = img_array.shape[:2]
-        escala = max(3.0, self.largura_minima_ocr / max(largura, 1))
-        img_array = cv2.resize(img_array, None, fx=escala, fy=escala,
-                               interpolation=cv2.INTER_CUBIC)
 
-        gray = cv2.cvtColor(img_array, cv2.COLOR_BGR2GRAY)
-        gray = cv2.fastNlMeansDenoising(gray, None, 10, 7, 21)
+        escala = max(
+            3.0,
+            self.largura_minima_ocr / max(largura, 1)
+        )
 
-        clahe     = cv2.createCLAHE(clipLimit=1.2, tileGridSize=(8, 8))
+        img_array = cv2.resize(
+            img_array,
+            None,
+            fx=escala,
+            fy=escala,
+            interpolation=cv2.INTER_CUBIC
+        )
+
+        gray = cv2.cvtColor(
+            img_array,
+            cv2.COLOR_BGR2GRAY
+        )
+
+        gray = cv2.fastNlMeansDenoising(
+            gray,
+            None,
+            10,
+            7,
+            21
+        )
+
+        # ============================================
+        # CLAHE
+        # ============================================
+
+        clahe = cv2.createCLAHE(
+            clipLimit=1.2,
+            tileGridSize=(8, 8)
+        )
+
         contraste = clahe.apply(gray)
 
-        blur = cv2.GaussianBlur(contraste, (3, 3), 0)
-        _, otsu     = cv2.threshold(blur, 0, 255,
-                                    cv2.THRESH_BINARY     + cv2.THRESH_OTSU)
-        _, otsu_inv = cv2.threshold(blur, 0, 255,
-                                    cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        # ============================================
+        # OTSU INV
+        # ============================================
 
-        adapt = cv2.adaptiveThreshold(contraste, 255,
-                                      cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                      cv2.THRESH_BINARY, 31, 9)
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-        adapt  = cv2.morphologyEx(adapt, cv2.MORPH_OPEN, kernel)
-        adapt  = cv2.erode(adapt, kernel, iterations=1)
+        _, otsu_inv = cv2.threshold(
+            contraste,
+            0,
+            255,
+            cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
+        )
 
-        return [img_array, contraste, otsu, otsu_inv, adapt]
+        return [
+            img_array,
+            contraste,
+            otsu_inv
+        ]
 
     # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     # BLOCO C â€” YOLO + OCR numa imagem  (port. de app.py)
@@ -261,7 +284,7 @@ class ValidadorExcelPro:
         img_cv2 = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
         resultados_yolo = self.yolo_model(
-            img_cv2, imgsz=1024, conf=0.25, iou=0.45,
+            img_cv2, imgsz=640, conf=0.25, iou=0.45,
             device=0, verbose=False
         )
 
@@ -275,7 +298,7 @@ class ValidadorExcelPro:
                 reverse=True,
             )
 
-            for box in boxes_ordenadas:
+            for box in boxes_ordenadas[:1]:
                 conf_det = float(box.conf[0])
                 if conf_det < 0.35:
                     continue
@@ -295,12 +318,10 @@ class ValidadorExcelPro:
                 for variante in variantes:
                     resultados_ocr = self.ocr_reader.readtext(
                         variante,
-                        detail=1,
+                        detail=0,
                         allowlist=self.ocr_allowlist,
-                        decoder='beamsearch',
-                        beamWidth=10,
+                        decoder='greedy',
                         text_threshold=0.35,
-                        mag_ratio=2,
                     )
 
                     # Candidatos individuais + texto unido (caso OCR fragmente)
@@ -325,7 +346,7 @@ class ValidadorExcelPro:
                             melhor_texto = texto
 
                         # Atalho: leitura perfeita e confiÃ¡vel â†’ encerra
-                        if placa_valida and confianca >= 0.40:
+                        if placa_valida:
                             return texto
 
         return melhor_texto if melhor_texto else 'Nao foi possivel identificar os caracteres'

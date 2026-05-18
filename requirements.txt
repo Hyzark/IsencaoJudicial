@@ -11,6 +11,7 @@ pandas
 PyMuPDF
 openpyxl
 numpy
+xxhash
 Pillow
 pdfplumber
 tqdm

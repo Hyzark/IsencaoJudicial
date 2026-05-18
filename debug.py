@@ -180,7 +180,29 @@ class DebugValidador:
                 if not aceita:
                     continue
 
-                recorte   = img_cv2[y1:y2, x1:x2]
+                # Garante limites válidos
+                h, w = img_cv2.shape[:2]
+
+                x1 = max(0, min(x1, w - 1))
+                x2 = max(0, min(x2, w))
+                y1 = max(0, min(y1, h - 1))
+                y2 = max(0, min(y2, h))
+
+                # Descarta bbox inválida
+                if x2 <= x1 or y2 <= y1:
+                    continue
+
+                recorte = img_cv2[y1:y2, x1:x2]
+
+                # Descarta recorte vazio
+                if recorte is None or recorte.size == 0:
+                    continue
+
+                # Descarta recorte pequeno demais
+                rh, rw = recorte.shape[:2]
+                if rw < 10 or rh < 10:
+                    continue
+
                 variantes = v._pre_processar_imagem(recorte)
 
                 variantes_debug = []
@@ -193,7 +215,6 @@ class DebugValidador:
                         decoder='beamsearch',
                         beamWidth=10,
                         text_threshold=0.35,
-                        mag_ratio=2,
                     )
 
                     candidatos = [(res[1], float(res[2])) for res in resultados_ocr]
@@ -850,13 +871,14 @@ def main():
         print(f'   {len(fotos)} foto(s) encontrada(s)')
 
         imgs_debug = []
-        for idx, foto_bytes in enumerate(fotos):
-            print(f'   ðŸ” Imagem {idx+1}/{len(fotos)}...', end=' ', flush=True)
+        MAX_IMAGENS_DEBUG = 500
+        for idx, foto_bytes in enumerate(fotos[:MAX_IMAGENS_DEBUG]):
+            print(f'   🔍 Imagem {idx+1}/{len(fotos)}...', end=' ', flush=True)
             resultado = debug_v.processar_imagem_com_debug(
                 foto_bytes, passagem.get('placa', ''), idx
             )
             imgs_debug.append(resultado)
-            print(f'OCR â†’ {resultado["placa_ocr"]}  (score={resultado["melhor_score"]})')
+            print(f'OCR → {resultado["placa_ocr"]}  (score={resultado["melhor_score"]})')
 
         registros.append({
             'arquivo':   nome,

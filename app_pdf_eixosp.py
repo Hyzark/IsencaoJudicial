@@ -140,12 +140,12 @@ class ValidadorPdfEixo:
         pil_image = Image.open(BytesIO(imagem_bytes)).convert("RGB")
         img_cv2 = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
 
-        resultados_yolo = self.yolo_model(img_cv2, imgsz=1024, conf=0.25, iou=0.45, device=0, verbose=False)
+        resultados_yolo = self.yolo_model(img_cv2, imgsz=640, conf=0.25, iou=0.45, device=0, verbose=False)
         melhor_texto, melhor_score = "", -1
 
         for r in resultados_yolo:
             boxes_ordenadas = sorted(r.boxes, key=lambda b: float(b.conf[0]) if b.conf is not None else 0, reverse=True)
-            for box in boxes_ordenadas:
+            for box in boxes_ordenadas[:1]:
                 if float(box.conf[0]) < 0.35: continue
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 razao = (x2 - x1) / max((y2 - y1), 1)
@@ -153,7 +153,7 @@ class ValidadorPdfEixo:
 
                 imagens_para_ocr = self.pre_processar_imagem(img_cv2[y1:y2, x1:x2])
                 for imagem_ocr in imagens_para_ocr:
-                    resultados_ocr = self.ocr_reader.readtext(imagem_ocr, detail=1, allowlist=self.ocr_allowlist, decoder='beamsearch', beamWidth=10, text_threshold=0.35, mag_ratio=2)
+                    resultados_ocr = self.ocr_reader.readtext(imagem_ocr, detail=0, allowlist=self.ocr_allowlist, decoder='greedy', text_threshold=0.35)
                     candidatos = [(res[1], float(res[2])) for res in resultados_ocr]
                     if len(resultados_ocr) > 1:
                         candidatos.append(("".join(res[1] for res in resultados_ocr), float(np.mean([res[2] for res in resultados_ocr]))))
